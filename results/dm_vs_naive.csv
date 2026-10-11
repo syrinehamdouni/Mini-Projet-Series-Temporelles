@@ -1,0 +1,8 @@
+modele,DM_stat_vs_naive,p_value,conclusion
+ARIMA_manuel,-0.18894032044780046,0.8503967039624314,moins bon que la baseline — NON significatif
+ARIMA_auto,0.1882856776630183,0.8509089043023019,meilleur que la baseline — NON significatif
+SARIMA,0.1882856776630183,0.8509089043023019,meilleur que la baseline — NON significatif
+VAR,0.16203720054871198,0.8714960864698253,meilleur que la baseline — NON significatif
+VECM,-1.793607844165034,0.07490385676319988,moins bon que la baseline — NON significatif
+LSTM,-0.0827355743041309,0.9341728411269938,moins bon que la baseline — NON significatif
+GRU,0.229627243623297,0.8186963564056118,meilleur que la baseline — NON significatif

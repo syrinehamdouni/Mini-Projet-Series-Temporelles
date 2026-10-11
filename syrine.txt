@@ -1,0 +1,185 @@
+FICHE PROJET — Séries temporelles KO (Coca-Cola) & PEP (PepsiCo), 2019-2024  (Syrine)
+Date de remise : 12 octobre 2026, 23h55 -> ahmed.dhouibi@tek-up.de (archive .zip : code + rapport + notebook)
+=====================================================================================================
+
+0. A LIRE EN PREMIER (honnêteté)
+-----------------------------------------------------------------------------------------------------
+- Tout le code a été écrit en suivant le cahier des charges du prof, MAIS il n'a PAS pu être exécuté lors de sa création
+  (pas d'accès à Yahoo Finance ni aux packages). Il est vérifié syntaxiquement, pas testé sur les vraies données.
+  => Exécutez-le chez vous ; si une erreur apparaît, corrigez-la avant de rendre.
+- Les RÉSULTATS (p-values, ordres ARIMA, métriques...) n'existent pas encore : ils sortent quand vous lancez le pipeline.
+  Les interprétations ci-dessous sont des RÈGLES DE LECTURE ; vous devez vérifier ce que vos graphiques montrent réellement.
+- Pas inclus (non demandé / optionnel) : approche hybride, Prophet/TFT, extensions bonus section 7, le rapport Word/PDF de 15-25 pages
+  (à rédiger avec vos résultats), le code R pour LSTM/GRU (autorisé en Python seulement).
+
+1. ETAPES RÉALISÉES (dans l'ordre du cahier des charges)
+-----------------------------------------------------------------------------------------------------
+Choix : Option A Finance, KO et PEP (2 actifs corrélés), journalier, 2019-2024, split chronologique 90 % / 10 %.
+ Etape 1  Données + exploration (sections 1-2) : téléchargement, indicateurs (rendement log, MM20, volatilité 21 j), ACF/PACF,
+          STL, valeurs aberrantes (IQR), tests ADF + KPSS -> conclusion sur d.
+ Etape 2  ARIMA/SARIMA (3.1) : ordre manuel (ACF/PACF) vs automatique, SARIMA m=5, diagnostic complet des résidus.
+ Etape 3  VAR + Granger + cointégration (Engle-Granger, Johansen) + VECM si cointégration (3.2).
+ Etape 4  Test ARCH-LM + GARCH (1,1) et ordres supérieurs, diagnostic des résidus standardisés, volatilité dans le temps (3.3).
+ Etape 5  LSTM et GRU : fenêtres glissantes, hyperparamètres, courbes de perte, validation croisée walk-forward (4.1).
+ Etape 6  Prévisions h=10, tableau unique MSE/RMSE/MAE/MAPE, test de Diebold-Mariano, conclusion (section 6).
+ Etape 7  IA générative (section 5) : prompts générés à partir de VOS résultats, réponses LLM, comparaison critique.
+ Etape 8  Livrables : code Python + R commentés, notebook, application Streamlit, présentation.
+
+2. COMMENT LANCER LE PROJET
+-----------------------------------------------------------------------------------------------------
+ a) Installer :            pip install -r requirements.txt      (Python 3.10 à 3.12 conseillé pour TensorFlow)
+ b) Tout exécuter :        python python/run_all.py             (lance les scripts 01 à 07, le notebook, la présentation)
+    ou étape par étape :   python python/01_donnees_eda.py  puis 02, 03, 04, 05, 06, 07
+    ou via le notebook :   jupyter notebook notebook/projet_KO_PEP.ipynb  (Run All)
+ c) Si Yahoo bloque le téléchargement : télécharger KO et PEP à la main sur finance.yahoo.com (Historical Data, 01/01/2019-31/12/2024,
+    Download) et mettre KO.csv et PEP.csv dans data/ (le script 01 les utilisera).
+ d) R :                    install.packages(c("forecast","tseries","urca","vars","rugarch"))  puis, depuis la racine : Rscript R/classique.R
+                           (il lit les CSV de data/, donc lancer d'abord l'étape 01 Python).
+ e) LLM :                  après l'étape 07, ouvrir llm/prompts/*.md, coller chaque prompt dans ChatGPT/Claude/Gemini, coller la réponse
+                           INTÉGRALE dans llm/reponses/ (ou dans l'application).
+ f) Application :          streamlit run app/streamlit_app.py
+ g) Présentation :         python python/build_presentation.py  (à relancer après le pipeline pour y insérer vos vrais graphiques et chiffres)
+ Reproductibilité : graine 42 partout, versions affichées au début du notebook, aucune dépendance à un chemin local.
+
+3. CONTENU DE CHAQUE FICHIER ET POURQUOI IL EXISTE
+-----------------------------------------------------------------------------------------------------
+ python/common.py            Paramètres communs (graine, split 90/10, horizon 10), métriques, test Diebold-Mariano, diagnostics.
+                             POURQUOI : tous les modèles doivent être comparés avec exactement les mêmes règles.
+ python/01_donnees_eda.py    Sections 1-2. Produit fig01-fig06 + stationnarite.csv + stats_descriptives.csv + outliers.csv.
+                             POURQUOI : sans stationnarité ni ACF/PACF on ne peut pas justifier d ni (p,q).
+ python/02_arima_sarima.py   Section 3.1. ARIMA manuel/auto, SARIMA, diagnostic (Ljung-Box, Jarque-Bera, Shapiro, ARCH). fig07-fig10, diag_arima.csv.
+                             Sauve aussi les prévisions glissantes (naïf, ARIMA, SARIMA). POURQUOI : cœur économétrique, un modèle sans diagnostic n'est pas noté.
+ python/03_var_cointegration.py  Section 3.2. VAR, Granger, Engle-Granger, Johansen, VECM. fig11-fig12, diag_var.csv.
+                             POURQUOI : le prof exige de dépasser l'univarié ; KO/PEP sont des candidats naturels à la cointégration.
+ python/04_garch.py          Section 3.3. ARCH-LM, GARCH(1,1) et ordres supérieurs, diagnostic z, volatilité. fig13-fig14, garch_selection.csv, diag_garch.csv.
+                             POURQUOI : les rendements financiers ont une variance non constante.
+ python/05_deep_learning.py  Section 4.1. LSTM/GRU, hyperparamètres, walk-forward. fig15-fig16, dl_hyperparams.csv, dl_cv_walkforward.csv.
+                             POURQUOI : comparer classique vs avancé ; validation temporelle exigée (jamais k-fold).
+ python/06_evaluation.py     Section 6. Tableau metrics.csv, Diebold-Mariano, fig17-fig19.
+                             POURQUOI : une différence de RMSE n'a de sens que si elle est significative ; baseline naïve incluse.
+ python/07_llm_prompts.py    Section 5. Génère llm/prompts/*.md depuis vos résultats + modèles de fichiers pour votre interprétation.
+                             POURQUOI : documenter prompt + réponse intégralement, et comparer votre analyse (écrite AVANT) à celle du LLM.
+ python/figures_info.py      Catalogue des graphiques (titre, explication, règle de lecture) utilisé par l'application et la présentation.
+ python/build_notebook.py    Assemble les scripts 01-07 en notebook/projet_KO_PEP.ipynb (livrable 8.3).
+ python/build_presentation.py Génère presentation/Presentation_KO_PEP.pptx (23 diapositives, graphiques et chiffres insérés automatiquement).
+ python/run_all.py           Lance tout le pipeline Python dans l'ordre.
+ R/classique.R               Même socle classique en R (ARIMA, VAR, cointégration, VECM, GARCH) : le prof exige R ET Python pour la section 3.
+ app/streamlit_app.py        Application simple : résumé, graphiques + interprétation, tableaux, section LLM (prompts, réponses, comparaison).
+ llm/                        prompts/ (générés), reponses/ (à coller), interpretation_humaine.md, comparaison_critique.md.
+ data/ figures/ results/     CSV Yahoo, tous les graphiques (png), tous les tableaux (csv, json).
+ notebook/                   Notebook exécutable de bout en bout.   presentation/  Le PowerPoint.   requirements.txt  Packages.
+
+4. OU TROUVER LES GRAPHIQUES DEMANDÉS PAR LE PROF ET COMMENT LES INTERPRÉTER
+-----------------------------------------------------------------------------------------------------
+Tous les graphiques sont dans le dossier figures/ (aussi visibles dans l'application Streamlit, page "Graphiques et interprétation").
+Pour chacun : fichier | script | ce qu'il montre | règle de lecture (à confirmer avec VOS résultats).
+
+[fig01_prix.png]  (script python/01_donnees_eda.py — section 1-2 Données / exploration)
+  Prix de KO et PEP
+  Montre : Haut : prix ajustés en USD (échelles différentes). Bas : prix rebasés à 100 pour comparer les dynamiques. Trait pointillé = début du test.
+  Interpréter : Tendance durable à la hausse/baisse => série non stationnaire en niveau. Si les deux courbes bougent ensemble => actifs corrélés, candidats à la cointégration. Un krach visible (mars 2020) = rupture à signaler.
+
+[fig02_indicateurs.png]  (script python/01_donnees_eda.py — section 1-2 Données / exploration)
+  Indicateurs dérivés : MM20, rendements, volatilité réalisée
+  Montre : Moyenne mobile 20 j de KO, rendements logarithmiques des deux actifs, volatilité réalisée 21 j annualisée.
+  Interpréter : Rendements autour de 0 sans tendance => stationnaires. Périodes agitées suivies de périodes calmes (clusters) => variance non constante => justifie ARCH/GARCH.
+
+[fig03_acf_pacf_niveau.png]  (script python/01_donnees_eda.py — section 2 Exploration)
+  ACF / PACF de log(KO) (série brute)
+  Montre : Autocorrélations et autocorrélations partielles du log-prix, 40 retards, bandes de confiance à 95 %.
+  Interpréter : ACF qui décroît très lentement et PACF forte au retard 1 => racine unitaire (non stationnaire) => il faut différencier.
+
+[fig04_acf_pacf_diff.png]  (script python/01_donnees_eda.py — section 2 / 3.1 Identification ARIMA)
+  ACF / PACF de Δlog(KO) (série différenciée)
+  Montre : Mêmes graphiques sur le rendement. C'est LE graphique qui sert à choisir p et q.
+  Interpréter : PACF coupe après p retards et ACF décroît => AR(p). ACF coupe après q retards et PACF décroît => MA(q). Aucun retard significatif => rendements ≈ bruit blanc (marche aléatoire : ARIMA(0,1,0)). Quelques pics isolés à 5 % sont normaux (1 retard sur 20).
+
+[fig05_stl_KO.png]  (script python/01_donnees_eda.py — section 2 Exploration)
+  Décomposition STL de log(KO)
+  Montre : 4 panneaux : observé, tendance, saisonnalité (période 252 j), reste.
+  Interpréter : Tendance = mouvement de fond. Saisonnalité d'amplitude minuscule devant la tendance (voir stl_forces.csv : force proche de 0) => pas de vraie saisonnalité annuelle. Le reste doit ressembler à du bruit ; ses pics = chocs (COVID).
+
+[fig06_outliers.png]  (script python/01_donnees_eda.py — section 2 Exploration)
+  Valeurs aberrantes (IQR)
+  Montre : Boxplot des rendements et rendements de KO avec les points hors de [Q1-1.5·IQR ; Q3+1.5·IQR] en rouge.
+  Interpréter : Les points rouges se regroupent-ils sur des dates d'événements réels (mars 2020) ? Oui => chocs authentiques, on les CONSERVE (+ variable indicatrice) plutôt que de les supprimer.
+
+[fig07_resid_ARIMA_manuel.png]  (script python/02_arima_sarima.py — section 3.1 ARIMA)
+  Diagnostic des résidus — ARIMA manuel
+  Montre : Résidus dans le temps, ACF des résidus, histogramme vs loi normale, QQ-plot.
+  Interpréter : ACF des résidus dans la bande => indépendance (Ljung-Box non rejeté). QQ-plot qui s'écarte aux extrémités / histogramme pointu => queues épaisses (normalité rejetée, très courant en finance). Résidus à amplitude variable => effet ARCH.
+
+[fig08_resid_ARIMA_auto.png]  (script python/02_arima_sarima.py — section 3.1 ARIMA)
+  Diagnostic des résidus — ARIMA auto
+  Montre : Idem pour l'ordre trouvé par la recherche automatique.
+  Interpréter : Même lecture ; comparer avec le modèle manuel (mêmes défauts ?).
+
+[fig09_resid_SARIMA.png]  (script python/02_arima_sarima.py — section 3.1 SARIMA)
+  Diagnostic des résidus — SARIMA (m=5)
+  Montre : Idem avec une composante saisonnière hebdomadaire.
+  Interpréter : Le SARIMA améliore-t-il l'AIC/BIC ET les résidus ? Sinon la saisonnalité ajoute de la complexité sans valeur.
+
+[fig10_prevision_arima.png]  (script python/02_arima_sarima.py — section 3.1 / 6 Prévision)
+  Prévision à 10 jours avec IC 95 %
+  Montre : 60 derniers jours d'apprentissage, 10 jours observés du test, prévision et intervalle de prédiction.
+  Interpréter : L'intervalle s'élargit avec l'horizon (incertitude cumulative). Si l'observé reste dans l'IC => intervalle bien calibré.
+
+[fig11_resid_VAR_KO.png]  (script python/03_var_cointegration.py — section 3.2 VAR)
+  Diagnostic des résidus — équation KO du VAR
+  Montre : 4 graphiques de diagnostic des résidus du VAR (équation KO).
+  Interpréter : Même lecture que pour ARIMA ; les tests multivariés sont dans diag_var.csv.
+
+[fig12_spread_cointegration.png]  (script python/03_var_cointegration.py — section 3.2 Cointégration)
+  Écart de long terme KO − b·PEP
+  Montre : Combinaison linéaire des log-prix issue de la régression de long terme.
+  Interpréter : Écart qui revient sans cesse vers sa moyenne (mean-reverting) => cointégration plausible. Écart qui dérive comme une marche aléatoire => pas de cointégration. À croiser avec Engle-Granger/Johansen (key_results.json).
+
+[fig13_garch_volatilite.png]  (script python/04_garch.py — section 3.3 GARCH)
+  Volatilité conditionnelle estimée
+  Montre : Rendements de KO (haut) et écart-type conditionnel du GARCH (bas), avec des événements connus.
+  Interpréter : Pics de volatilité alignés avec les événements (krach COVID, remontée des taux) => le modèle capte les clusters. Retour progressif au calme = persistance (Σα+Σβ proche de 1).
+
+[fig14_garch_residus.png]  (script python/04_garch.py — section 3.3 GARCH)
+  Résidus standardisés du GARCH
+  Montre : Diagnostic des résidus standardisés du GARCH retenu.
+  Interpréter : Doivent redevenir sans autocorrélation et homoscédastiques (ARCH-LM et Ljung-Box sur z² non rejetés, voir diag_garch.csv). Un QQ-plot encore épais justifie la loi de Student.
+
+[fig15_dl_pertes.png]  (script python/05_deep_learning.py — section 4.1 LSTM/GRU)
+  Courbes de perte train / validation
+  Montre : MSE à chaque epoch sur l'apprentissage et la validation (chronologique) pour LSTM et GRU.
+  Interpréter : Perte de validation qui remonte pendant que celle du train baisse => surapprentissage (l'arrêt précoce le limite). Deux courbes proches et plates => le réseau apprend peu (signal faible, normal sur des rendements).
+
+[fig16_dl_cv_walkforward.png]  (script python/05_deep_learning.py — section 4.1 Validation croisée temporelle)
+  Validation croisée walk-forward
+  Montre : RMSE du rendement cumulé à 10 jours par pli (passé -> futur) pour LSTM et GRU, avec la baseline naïve.
+  Interpréter : Barres systématiquement sous la ligne naïve => gain réel et robuste. Barres au-dessus ou instables d'un pli à l'autre => pas de gain robuste.
+
+[fig17_previsions_test.png]  (script python/06_evaluation.py — section 6 Prévision)
+  Prévisions de tous les modèles sur le test
+  Montre : Blocs de 10 jours consécutifs de chaque modèle superposés au prix observé.
+  Interpréter : Courbes quasi confondues => les modèles font la même chose (≈ dernier prix connu). Un modèle qui s'écarte beaucoup sans mieux suivre l'observé ne fait que du bruit.
+
+[fig18_metriques.png]  (script python/06_evaluation.py — section 6 Évaluation)
+  RMSE par modèle
+  Montre : Comparaison du RMSE (USD) de tous les modèles ; le tableau complet MSE/RMSE/MAE/MAPE est dans metrics.csv.
+  Interpréter : Plus petit = meilleur, mais lire avec le test de Diebold-Mariano : des RMSE proches ne sont pas forcément différents.
+
+[fig19_dm_pvalues.png]  (script python/06_evaluation.py — section 6 Évaluation)
+  Test de Diebold-Mariano (p-values par paires)
+  Montre : Carte des p-values du test DM pour chaque paire de modèles.
+  Interpréter : Cellule rouge (p < 0.05) => différence de précision significative. Cellules vertes/jaunes => on ne peut pas dire que les modèles diffèrent, même si les RMSE sont différents.
+
+Graphiques R (dossier figures_R/, créés par R/classique.R) : R_acf_pacf_diff.png, R_resid_*.png, R_prevision_arima.png, R_garch_volatilite.png.
+Tableaux de résultats importants (dossier results/) : stationnarite.csv, diag_arima.csv, diag_var.csv, garch_selection.csv, diag_garch.csv,
+ dl_cv_walkforward.csv, metrics.csv (tableau unique de comparaison), dm_vs_naive.csv, key_results.json (tous les chiffres clés).
+
+5. POINTS SUR LESQUELS LE PROF INSISTE (checklist avant de rendre)
+-----------------------------------------------------------------------------------------------------
+ [ ] Chaque modèle a son diagnostic de résidus ÉCRIT et interprété dans le rapport (sinon pas de note).
+ [ ] ADF ET KPSS, conclusion explicite sur d.   [ ] ACF/PACF interprétés par écrit, pas seulement affichés.
+ [ ] Ordres lus sur ACF/PACF ET auto.arima/pmdarima, les deux comparés (vérifier ORDRE_FORCE dans 02_arima_sarima.py après lecture de fig04).
+ [ ] Split chronologique, jamais aléatoire.   [ ] Validation walk-forward, jamais k-fold.   [ ] Diebold-Mariano, pas seulement les RMSE.
+ [ ] Une baseline (naïve) pour rester honnête.   [ ] Limites et échecs rapportés ; résultats jamais présentés comme définitifs.
+ [ ] LLM : prompts et réponses INTÉGRAUX, interprétation humaine écrite AVANT, erreurs du LLM détectées et corrigées (comparaison_critique.md).
+ [ ] Rapport 15-25 pages : introduction (justifier le choix en une phrase), analyses dans l'ordre, tableau de comparaison, interprétation, discussion critique.
+ [ ] Notebook qui tourne de bout en bout ; code commenté (quoi + pourquoi).   [ ] Soutenance possible : savoir expliquer chaque ligne de code.

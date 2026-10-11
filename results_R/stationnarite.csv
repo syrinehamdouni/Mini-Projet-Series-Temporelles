@@ -1,0 +1,5 @@
+"serie","ordre_difference","ADF_p","KPSS_p","conclusion"
+"KO",0,0.0276805798661215,0.01,"tests divergents"
+"KO",1,0.01,0.1,"stationnaire"
+"PEP",0,0.0206929349342305,0.01,"tests divergents"
+"PEP",1,0.01,0.1,"stationnaire"

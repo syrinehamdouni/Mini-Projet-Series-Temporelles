@@ -1,0 +1,5 @@
+serie,ADF_p,KPSS_p,conclusion
+log_KO,0.42909562339857166,0.01,NON stationnaire (racine unitaire)
+log_PEP,0.27818530638719163,0.01,NON stationnaire (racine unitaire)
+ret_KO,1.599478898862737e-20,0.1,stationnaire
+ret_PEP,7.073085619361264e-20,0.1,stationnaire

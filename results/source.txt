@@ -1,0 +1,6 @@
+Source : Yahoo Finance (finance.yahoo.com) via yfinance, tickers KO et PEP, fréquence journalière.
+Période : 2019-01-02 -> 2024-12-31 (1510 jours de bourse).
+Variables brutes : Open, High, Low, Close, Adj Close, Volume.
+Transformation du fournisseur : 'Adj Close' est ajusté des dividendes et des splits ; 'Close' ne l'est que des splits.
+Série modélisée : log(Adj Close). Indicateurs dérivés : rendement log, moyenne mobile 20 j, volatilité réalisée 21 j.
+Split chronologique : train 90 % (1359 jours), test 10 % (151 jours).
